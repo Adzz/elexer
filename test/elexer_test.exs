@@ -20,5 +20,11 @@ defmodule ElexerTest do
       ast = Elexer.parse(string)
       assert ast == {"+", ["1", "2", "2", "3", "4", "5", "6"]}
     end
+
+    test "we syntax error when we " do
+      string = "(+ 1, 2)"
+      message = "Program should start with a comment or an S - expression"
+      assert_raise(Elexer.SytanxError, message, fn -> Elexer.parse(string) end)
+    end
   end
 end
