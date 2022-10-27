@@ -10,8 +10,8 @@ defmodule Elexer do
   Parses lisps.
   """
   def parse("(" <> string) do
-    {fn_name, rest} = parse_fn_name(string, "")
-    {args, rest} = parse_args(rest, [])
+    {fn_name, rest} = parse_until_space(string, "")
+    {args, ""} = parse_args(rest, [])
     {fn_name, args}
   end
 
@@ -21,39 +21,29 @@ defmodule Elexer do
 
   # This would be the case where we had something like (+  or (+)
   # Basically we never get to the end of the fn name, is this possible?
-  defp parse_fn_name("", fn_name) do
+  defp parse_until_space("", _fn_name) do
     raise SytanxError, "(a)"
   end
 
-  defp parse_fn_name(<<head::binary-size(1), rest::binary>>, fn_name) do
+  defp parse_until_space(<<head::binary-size(1), rest::binary>>, fn_name) do
     # This case gives us the chance to error handle
     case head do
       " " -> {fn_name, rest}
       ")" -> {fn_name, rest}
-      char -> parse_fn_name(rest, fn_name <> char)
+      char -> parse_until_space(rest, fn_name <> char)
     end
   end
 
   defp parse_args(function_body, args) do
     # How would we think about casting args here? I guess we'd need a type system
     # Some way to annotate the types and or infer them so we could cast it correctly.
-    {arg, rest} = parse_fn_name(function_body, "")
+    {arg, rest} = parse_until_space(function_body, "")
     args = [arg | args]
 
     case rest do
       "" -> {Enum.reverse(args), rest}
       ")" -> {Enum.reverse(args), rest}
       _ -> parse_args(rest, args)
-    end
-  end
-
-  defp parse_s_expression(<<head::binary-size(1), rest::binary>>, acc) do
-    case head do
-      ")" ->
-        acc
-
-      char ->
-        nil
     end
   end
 end

@@ -9,11 +9,16 @@ defmodule ElexerTest do
       assert_raise(Elexer.SytanxError, message, fn -> Elexer.parse(string) end)
     end
 
-    @tag :t
     test "Parses simple S expression" do
       string = "(+ 1 2)"
       ast = Elexer.parse(string)
       assert ast == {"+", ["1", "2"]}
+    end
+
+    test "parses arbitrary args" do
+      string = "(+ 1 2 2 3 4 5 6)"
+      ast = Elexer.parse(string)
+      assert ast == {"+", ["1", "2", "2", "3", "4", "5", "6"]}
     end
   end
 end
