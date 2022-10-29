@@ -56,16 +56,36 @@ defmodule Elexer do
     "\"" <> rest_value
   end
 
-  # If it's not a speechmark it will be an Integer?
+  defp cast_arg("-" <> value = all) do
+    case parse_number(value, 0) do
+      :number_parse_error ->
+        raise SytanxError, "Could not cast value to number: #{inspect(all)}"
+
+      :float ->
+        case Float.parse(value) do
+          {float, ""} ->
+            -float
+
+          {_float, _rest} ->
+            raise SytanxError, "Could not cast value to number: #{inspect(all)}"
+
+          # We shouldn't ever hit this case I think
+          :error ->
+            raise SytanxError, "Could not cast value to number: #{inspect(all)}"
+        end
+
+      int ->
+        -int
+    end
+  end
+
   defp cast_arg(value) do
-    case Integer.parse(value) do
-      :error ->
+    # Instead of accumulating into a list we can just multiply by base
+    case parse_number(value, 0) do
+      :number_parse_error ->
         raise SytanxError, "Could not cast value to number: #{inspect(value)}"
 
-      {int, ""} ->
-        int
-
-      {_int, "." <> _rest} ->
+      :float ->
         case Float.parse(value) do
           {float, ""} ->
             float
@@ -78,8 +98,28 @@ defmodule Elexer do
             raise SytanxError, "Could not cast value to number: #{inspect(value)}"
         end
 
-      {_int, _rest} ->
-        raise SytanxError, "Could not cast value to number: #{inspect(value)}"
+      int ->
+        int
     end
+  end
+
+  defp parse_number("", acc), do: acc
+
+  defp parse_number(".", _acc), do: :float
+  defp parse_number(<<".", _rest::binary>>, _acc), do: :float
+
+  defp parse_number(<<?0, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 0)
+  defp parse_number(<<?1, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 1)
+  defp parse_number(<<?2, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 2)
+  defp parse_number(<<?3, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 3)
+  defp parse_number(<<?4, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 4)
+  defp parse_number(<<?5, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 5)
+  defp parse_number(<<?6, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 6)
+  defp parse_number(<<?7, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 7)
+  defp parse_number(<<?8, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 8)
+  defp parse_number(<<?9, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 9)
+
+  defp parse_number(_binary, _acc) do
+    :number_parse_error
   end
 end

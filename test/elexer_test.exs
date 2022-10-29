@@ -35,7 +35,7 @@ defmodule ElexerTest do
     end
 
     test "a bunch of integer / float syntax errors" do
-      ["1,", "-1,", "-100.00_", "0.00,", "0..0"]
+      ["1,", "-1,", "-100.00_", "0.00,", "0..0", "."]
       |> Enum.each(fn invalid ->
         string = "(+ #{invalid} 2)"
         message = "Could not cast value to number: #{inspect(invalid)}"
