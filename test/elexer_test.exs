@@ -2,7 +2,7 @@ defmodule ElexerTest do
   use ExUnit.Case
   doctest Elexer
 
-  describe "parse/1" do
+  describe "parse/1 ints and floats" do
     test "raises syntax error when program starts incorrectly" do
       string = "@+ 1 2)"
       message = "Program should start with a comment or an S - expression"
@@ -39,7 +39,17 @@ defmodule ElexerTest do
                   100_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000
                 ]}
     end
+  end
 
+  describe "parse/1 Strings" do
+    test "we can parse a string into the AST" do
+      string = "(+ \"123abc,\" \"!@#$%^&*\")"
+      ast = Elexer.parse(string)
+      assert ast === {"+", ["\"123abc,\"", "\"!@#$%^&*\""]}
+    end
+  end
+
+  describe "parse/1 ints and floats errors" do
     # Does this require a type system? To know which args are good or not.
     test "we syntax error when we parse args" do
       string = "(+ 1, 2)"
