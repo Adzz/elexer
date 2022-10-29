@@ -27,6 +27,19 @@ defmodule ElexerTest do
       assert ast === {"+", [1, 2.1, -2.2, 3, 4, 5, 6]}
     end
 
+    test "we can cast to large int" do
+      string =
+        "(+ 100000000000000000000000000000000000000000000000000000000000000000000000000000)"
+
+      ast = Elexer.parse(string)
+
+      assert ast ===
+               {"+",
+                [
+                  100_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000_000
+                ]}
+    end
+
     # Does this require a type system? To know which args are good or not.
     test "we syntax error when we parse args" do
       string = "(+ 1, 2)"

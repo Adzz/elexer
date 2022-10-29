@@ -57,45 +57,29 @@ defmodule Elexer do
   end
 
   defp cast_arg("-" <> value = all) do
-    case parse_number(value, 0) do
-      :number_parse_error ->
-        raise SytanxError, "Could not cast value to number: #{inspect(all)}"
-
-      :float ->
-        case Float.parse(value) do
-          {float, ""} ->
-            -float
-
-          {_float, _rest} ->
-            raise SytanxError, "Could not cast value to number: #{inspect(all)}"
-
-          # We shouldn't ever hit this case I think
-          :error ->
-            raise SytanxError, "Could not cast value to number: #{inspect(all)}"
-        end
-
-      int ->
-        -int
+    case parse_absolute_number(value) do
+      :error -> raise SytanxError, "Could not cast value to number: #{inspect(all)}"
+      number -> -number
     end
   end
 
   defp cast_arg(value) do
-    # Instead of accumulating into a list we can just multiply by base
+    case parse_absolute_number(value) do
+      :error -> raise SytanxError, "Could not cast value to number: #{inspect(value)}"
+      number -> number
+    end
+  end
+
+  defp parse_absolute_number(value) do
     case parse_number(value, 0) do
       :number_parse_error ->
-        raise SytanxError, "Could not cast value to number: #{inspect(value)}"
+        :error
 
       :float ->
         case Float.parse(value) do
-          {float, ""} ->
-            float
-
-          {_float, _rest} ->
-            raise SytanxError, "Could not cast value to number: #{inspect(value)}"
-
-          # We shouldn't ever hit this case I think
-          :error ->
-            raise SytanxError, "Could not cast value to number: #{inspect(value)}"
+          {float, ""} -> float
+          {_float, _rest} -> :error
+          :error -> :error
         end
 
       int ->
