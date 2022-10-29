@@ -1,5 +1,5 @@
 # Elexer
 
-A simple lisp lexer.
+An elixir lisp lexer.
 
 Don't use it.
