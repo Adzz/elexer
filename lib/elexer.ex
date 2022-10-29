@@ -38,12 +38,48 @@ defmodule Elexer do
     # How would we think about casting args here? I guess we'd need a type system
     # Some way to annotate the types and or infer them so we could cast it correctly.
     {arg, rest} = parse_until_space(function_body, "")
-    args = [arg | args]
+
+    args = [cast_arg(arg) | args]
 
     case rest do
       "" -> {Enum.reverse(args), rest}
       ")" -> {Enum.reverse(args), rest}
       _ -> parse_args(rest, args)
+    end
+  end
+
+  # I think this is getting into type system territory but I don't know nothing about them.
+
+  # This assumes string because we start with an open ", of course we need to check for a
+  # closing speech mark which we don't do right now.
+  defp cast_arg("\"" <> rest_value) do
+    "\"" <> rest_value
+  end
+
+  # If it's not a speechmark it will be an Integer?
+  defp cast_arg(value) do
+    case Integer.parse(value) do
+      :error ->
+        raise SytanxError, "Could not cast value to number: #{inspect(value)}"
+
+      {int, ""} ->
+        int
+
+      {_int, "." <> _rest} ->
+        case Float.parse(value) do
+          {float, ""} ->
+            float
+
+          {_float, _rest} ->
+            raise SytanxError, "Could not cast value to number: #{inspect(value)}"
+
+          # We shouldn't ever hit this case I think
+          :error ->
+            raise SytanxError, "Could not cast value to number: #{inspect(value)}"
+        end
+
+      {_int, _rest} ->
+        raise SytanxError, "Could not cast value to number: #{inspect(value)}"
     end
   end
 end
