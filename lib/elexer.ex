@@ -71,40 +71,35 @@ defmodule Elexer do
   end
 
   defp parse_absolute_number(value) do
-    case parse_number(value, 0) do
-      :number_parse_error ->
-        :error
-
-      :float ->
-        case Float.parse(value) do
-          {float, ""} -> float
-          {_float, _rest} -> :error
-          :error -> :error
-        end
-
-      int ->
-        int
+    case parse_integer(value, 0) do
+      :number_parse_error -> :error
+      :float -> parse_float(value)
+      int -> int
     end
   end
 
-  defp parse_number("", acc), do: acc
+  defp parse_integer("", acc), do: acc
 
-  defp parse_number(".", _acc), do: :float
+  defp parse_integer(".", _acc), do: :float
   # Kind of inefficient to throw away acc but until we know how float parsing works we have to
-  defp parse_number(<<".", _rest::binary>>, _acc), do: :float
+  defp parse_integer(<<".", _rest::binary>>, _acc), do: :float
+  defp parse_integer(<<?0, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 0)
+  defp parse_integer(<<?1, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 1)
+  defp parse_integer(<<?2, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 2)
+  defp parse_integer(<<?3, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 3)
+  defp parse_integer(<<?4, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 4)
+  defp parse_integer(<<?5, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 5)
+  defp parse_integer(<<?6, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 6)
+  defp parse_integer(<<?7, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 7)
+  defp parse_integer(<<?8, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 8)
+  defp parse_integer(<<?9, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 9)
+  defp parse_integer(_binary, _acc), do: :number_parse_error
 
-  defp parse_number(<<?0, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 0)
-  defp parse_number(<<?1, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 1)
-  defp parse_number(<<?2, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 2)
-  defp parse_number(<<?3, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 3)
-  defp parse_number(<<?4, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 4)
-  defp parse_number(<<?5, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 5)
-  defp parse_number(<<?6, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 6)
-  defp parse_number(<<?7, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 7)
-  defp parse_number(<<?8, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 8)
-  defp parse_number(<<?9, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 9)
-
-  defp parse_number(_binary, _acc) do
-    :number_parse_error
+  defp parse_float(value) do
+    case Float.parse(value) do
+      {float, ""} -> float
+      {_float, _rest} -> :error
+      :error -> :error
+    end
   end
 end
