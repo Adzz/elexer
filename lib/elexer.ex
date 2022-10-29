@@ -90,6 +90,7 @@ defmodule Elexer do
   defp parse_number("", acc), do: acc
 
   defp parse_number(".", _acc), do: :float
+  # Kind of inefficient to throw away acc but until we know how float parsing works we have to
   defp parse_number(<<".", _rest::binary>>, _acc), do: :float
 
   defp parse_number(<<?0, rest::binary>>, acc), do: parse_number(rest, acc * 10 + 0)
