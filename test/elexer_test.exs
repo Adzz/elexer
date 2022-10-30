@@ -47,6 +47,15 @@ defmodule ElexerTest do
       ast = Elexer.parse(string)
       assert ast === {"+", ["\"123abc,\"", "\"!@#$%^&*\""]}
     end
+
+    test "strings that don't close syntax error" do
+      string = "(+ \"@#$%^&*sss)"
+      message = "Binary was missing closing \"!"
+
+      assert_raise(Elexer.SytanxError, message, fn ->
+        Elexer.parse(string)
+      end)
+    end
   end
 
   describe "parse/1 ints and floats errors" do

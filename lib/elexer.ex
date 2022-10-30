@@ -29,6 +29,7 @@ defmodule Elexer do
     # This case gives us the chance to error handle
     case head do
       " " -> {fn_name, rest}
+      # This means we are at the end
       ")" -> {fn_name, rest}
       char -> parse_until_space(rest, fn_name <> char)
     end
@@ -50,10 +51,13 @@ defmodule Elexer do
 
   # I think this is getting into type system territory but I don't know nothing about them.
 
-  # This assumes string because we start with an open ", of course we need to check for a
-  # closing speech mark which we don't do right now.
-  defp cast_arg("\"" <> rest_value) do
-    "\"" <> rest_value
+  # String parsing currently does not handle escaping speech marks in text.
+  defp cast_arg("\"" <> rest_value = full_string) do
+    case parse_until(rest_value, "\"", "") do
+      :terminal_char_never_reached -> raise SytanxError, "Binary was missing closing \"!"
+      # I _think_ it should always be empty if parse_arg is working correctly.
+      {_fn_name, ""} -> full_string
+    end
   end
 
   defp cast_arg("-" <> value = all) do
@@ -75,6 +79,18 @@ defmodule Elexer do
       :number_parse_error -> :error
       :float -> parse_float(value)
       int -> int
+    end
+  end
+
+  defp parse_until("", _terminal_char, _fn_name) do
+    :terminal_char_never_reached
+  end
+
+  defp parse_until(<<head::binary-size(1), rest::binary>>, terminal_char, fn_name) do
+    # This case gives us the chance to error handle
+    case head do
+      ^terminal_char -> {fn_name, rest}
+      char -> parse_until(rest, terminal_char, fn_name <> char)
     end
   end
 
