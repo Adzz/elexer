@@ -9,11 +9,11 @@ defmodule ElexerTest do
   # Then we get into a list of keywords that are allowed to be bare words.
 
   describe "parse/1 - nested S expression" do
-    # test "works well thanks" do
-    #   string = "(+ (- 3 4) 2)"
-    #   ast = Elexer.parse(string)
-    #   assert ast === {"+", [{"-", [3, 4]}, -2]}
-    # end
+    test "works well thanks" do
+      string = "(+ (+ 3 4) 2)"
+      ast = Elexer.parse(string)
+      assert ast === {"+", [{"-", [3, 4]}, -2]}
+    end
   end
 
   describe "parse/1 - start errors" do
@@ -90,7 +90,7 @@ defmodule ElexerTest do
 
     test "strings that don't close syntax error" do
       string = "(+ \"@#$%^&*sss)"
-      message = "Binary was missing closing \"!"
+      message = "Binary was missing closing \""
 
       assert_raise(Elexer.SytanxError, message, fn ->
         Elexer.parse(string)

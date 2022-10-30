@@ -13,12 +13,12 @@ defmodule Elexer do
   Parses lisps.
   """
   def parse("(" <> string) do
-    case parse_until(string, [" ", ")"], "") do
+    case parse_until(string, [" ", ")"], "") |> IO.inspect(limit: :infinity, label: "fnn") do
       :terminal_char_never_reached ->
         raise SytanxError, "Could not parse function name, missing closing bracket."
 
       {fn_name, rest} ->
-        {args, ""} = parse_args(rest, [])
+        {args, ""} = parse_args(rest, []) |> IO.inspect(limit: :infinity, label: "")
         {fn_name, args}
     end
   end
@@ -29,6 +29,10 @@ defmodule Elexer do
 
   defp parse_args(function_body, args) do
     # How do we detect the open bracket of a nested s expression?
+    # This is where we need to be like different, if we have a bare open bracket then
+    # consume until ) NOT until space? But then arb nesting trickier. Need ref count?
+
+    # I think we need a stack actually...
     case parse_until(function_body, [" ", ")"], "") do
       :terminal_char_never_reached -> raise SytanxError, @missing_paren_on_arg_error
       # This is for this case "(1 )" ; we'd hit the space but then there are no arguments.
@@ -39,15 +43,23 @@ defmodule Elexer do
   end
 
   # I think this is getting into type system territory but I don't know nothing about them.
+
+  # IS STRING
   # String parsing currently does not handle escaping speech marks in text.
   defp cast_arg("\"" <> rest_value = full_string) do
     case parse_until(rest_value, "\"", "") do
-      :terminal_char_never_reached -> raise SytanxError, "Binary was missing closing \"!"
+      :terminal_char_never_reached -> raise SytanxError, "Binary was missing closing \""
       # I _think_ it should always be empty if parse_arg is working correctly.
       {_fn_name, ""} -> full_string
     end
   end
 
+  # IS S EXPRESSION
+  defp cast_arg("(" <> _value = nested_expression) do
+    parse(nested_expression)
+  end
+
+  # IS NEGATIVE NUMBER
   defp cast_arg("-" <> value = all) do
     case parse_absolute_number(value) do
       :error -> raise SytanxError, "Could not cast value to number: #{inspect(all)}"
@@ -55,6 +67,7 @@ defmodule Elexer do
     end
   end
 
+  # IS NUMBER
   defp cast_arg(value) do
     case parse_absolute_number(value) do
       :error -> raise SytanxError, "Could not cast value to number: #{inspect(value)}"
@@ -70,11 +83,13 @@ defmodule Elexer do
     end
   end
 
-  defp parse_until("", _terminal_char, _fn_name) do
-    :terminal_char_never_reached
-  end
+  # this should be public and unit tested. Then we could document but if you provide
+  # multiple terminal chars then we OR them - ie stop as soon as we see any of them.
+  defp parse_until("", _terminal_char, _fn_name), do: :terminal_char_never_reached
 
   defp parse_until(<<head::binary-size(1), rest::binary>>, [_ | _] = terminal_chars, fn_name) do
+    head |> IO.inspect(limit: :infinity, label: "H")
+
     if head in terminal_chars do
       {fn_name, rest}
     else
