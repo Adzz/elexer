@@ -3,54 +3,42 @@ defmodule Elexer do
     defexception [:message]
   end
 
+  @missing_paren_on_arg_error "Could not parse argument, missing closing bracket."
+
   @moduledoc """
   Documentation for `Elexer`.
   """
+
   @doc """
   Parses lisps.
   """
   def parse("(" <> string) do
-    {fn_name, rest} = parse_until_space(string, "")
-    {args, ""} = parse_args(rest, [])
-    {fn_name, args}
+    case parse_until(string, [" ", ")"], "") do
+      :terminal_char_never_reached ->
+        raise SytanxError, "Could not parse function name, missing closing bracket."
+
+      {fn_name, rest} ->
+        {args, ""} = parse_args(rest, [])
+        {fn_name, args}
+    end
   end
 
   def parse(_) do
     raise SytanxError, "Program should start with a comment or an S - expression"
   end
 
-  # This would be the case where we had something like (+  or (+)
-  # Basically we never get to the end of the fn name, is this possible?
-  defp parse_until_space("", _fn_name) do
-    raise SytanxError, "(a)"
-  end
-
-  defp parse_until_space(<<head::binary-size(1), rest::binary>>, fn_name) do
-    # This case gives us the chance to error handle
-    case head do
-      " " -> {fn_name, rest}
-      # This means we are at the end
-      ")" -> {fn_name, rest}
-      char -> parse_until_space(rest, fn_name <> char)
-    end
-  end
-
   defp parse_args(function_body, args) do
-    # How would we think about casting args here? I guess we'd need a type system
-    # Some way to annotate the types and or infer them so we could cast it correctly.
-    {arg, rest} = parse_until_space(function_body, "")
-
-    args = [cast_arg(arg) | args]
-
-    case rest do
-      "" -> {Enum.reverse(args), rest}
-      ")" -> {Enum.reverse(args), rest}
-      _ -> parse_args(rest, args)
+    # How do we detect the open bracket of a nested s expression?
+    case parse_until(function_body, [" ", ")"], "") do
+      :terminal_char_never_reached -> raise SytanxError, @missing_paren_on_arg_error
+      # This is for this case "(1 )" ; we'd hit the space but then there are no arguments.
+      {"", ""} -> {Enum.reverse(args), ""}
+      {arg, ""} -> {Enum.reverse([cast_arg(arg) | args]), ""}
+      {arg, rest} -> parse_args(rest, [cast_arg(arg) | args])
     end
   end
 
   # I think this is getting into type system territory but I don't know nothing about them.
-
   # String parsing currently does not handle escaping speech marks in text.
   defp cast_arg("\"" <> rest_value = full_string) do
     case parse_until(rest_value, "\"", "") do
@@ -86,6 +74,14 @@ defmodule Elexer do
     :terminal_char_never_reached
   end
 
+  defp parse_until(<<head::binary-size(1), rest::binary>>, [_ | _] = terminal_chars, fn_name) do
+    if head in terminal_chars do
+      {fn_name, rest}
+    else
+      parse_until(rest, terminal_chars, fn_name <> head)
+    end
+  end
+
   defp parse_until(<<head::binary-size(1), rest::binary>>, terminal_char, fn_name) do
     # This case gives us the chance to error handle
     case head do
@@ -111,6 +107,7 @@ defmodule Elexer do
   defp parse_integer(<<?9, rest::binary>>, acc), do: parse_integer(rest, acc * 10 + 9)
   defp parse_integer(_binary, _acc), do: :number_parse_error
 
+  # We should parse this manually for fun.
   defp parse_float(value) do
     case Float.parse(value) do
       {float, ""} -> float
