@@ -12,7 +12,7 @@ defmodule ElexerTest do
     test "works well thanks" do
       string = "(+ (+ 3 4) 2)"
       ast = Elexer.parse(string)
-      assert ast === {"+", [{"-", [3, 4]}, -2]}
+      assert ast === {"+", [{"+", [3, 4]}, 2]}
     end
   end
 

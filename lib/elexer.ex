@@ -9,6 +9,24 @@ defmodule Elexer do
   Documentation for `Elexer`.
   """
 
+  # Our lang only supports ints, floats, strings and S expressions.
+  # The names of the functions have to exist somewhere so they are all built in?
+
+  # For now our lang only supports this:
+  # (function_name 1 2 3)
+  # ie function and one or more args.
+  # BUT an arg may be a nested S expression.
+
+  # def parse_s_expression("(" <> rest, handler, state) do
+  #   case parse_until(rest, " ", "") do
+  #     :terminal_char_never_reached ->
+  #       raise SytanxError, "S expression must be a fn name and args, separated by a space."
+
+  #     {fn_name, rest} ->
+  #       [{fn_name, []} | state]
+  #   end
+  # end
+
   @doc """
   Parses lisps.
   """
@@ -18,8 +36,14 @@ defmodule Elexer do
         raise SytanxError, "Could not parse function name, missing closing bracket."
 
       {fn_name, rest} ->
-        {args, ""} = parse_args(rest, [])
-        {fn_name, args}
+        case parse_args(rest, []) do
+          # This is the end of all args.
+          {args, ""} ->
+            {fn_name, args}
+
+          {args, rest_of_outer_s_expression} ->
+            {{fn_name, args}, rest_of_outer_s_expression}
+        end
     end
   end
 
@@ -28,20 +52,18 @@ defmodule Elexer do
   end
 
   defp parse_args("(" <> _value = nested_expression, args) do
-    parse(nested_expression)
-    |> IO.inspect(limit: :infinity, label: "xx")
+    {{_, _} = nested_ast, rest} = parse(nested_expression)
+    parse_args(rest, [nested_ast | args])
   end
 
   defp parse_args(function_body, args) do
-    # How do we detect the open bracket of a nested s expression?
-    # This is where we need to be like different, if we have a bare open bracket then
-    # consume until ) NOT until space? But then arb nesting trickier. Need ref count?
-
-    # I think we need a stack actually...
     case parse_until(function_body, [" ", ")"], "") do
       :terminal_char_never_reached -> raise SytanxError, @missing_paren_on_arg_error
       # This is for this case "(1 )" ; we'd hit the space but then there are no arguments.
       {"", ""} -> {[], ""}
+      # This is when a nested S expression was an arg and there is still some outer S expression to parse.
+      {"", rest} -> {Enum.reverse(args), rest}
+      # This is when we hit an ")"  BUT there is no more string to parse.
       {arg, ""} -> {Enum.reverse([cast_arg(arg) | args]), ""}
       {arg, rest} -> parse_args(rest, [cast_arg(arg) | args])
     end
@@ -94,8 +116,6 @@ defmodule Elexer do
   defp parse_until("", _terminal_char, _fn_name), do: :terminal_char_never_reached
 
   defp parse_until(<<head::binary-size(1), rest::binary>>, [_ | _] = terminal_chars, fn_name) do
-    head |> IO.inspect(limit: :infinity, label: "H")
-
     if head in terminal_chars do
       {fn_name, rest}
     else
