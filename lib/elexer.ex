@@ -13,18 +13,23 @@ defmodule Elexer do
   Parses lisps.
   """
   def parse("(" <> string) do
-    case parse_until(string, [" ", ")"], "") |> IO.inspect(limit: :infinity, label: "fnn") do
+    case parse_until(string, [" ", ")"], "") do
       :terminal_char_never_reached ->
         raise SytanxError, "Could not parse function name, missing closing bracket."
 
       {fn_name, rest} ->
-        {args, ""} = parse_args(rest, []) |> IO.inspect(limit: :infinity, label: "")
+        {args, ""} = parse_args(rest, [])
         {fn_name, args}
     end
   end
 
   def parse(_) do
     raise SytanxError, "Program should start with a comment or an S - expression"
+  end
+
+  defp parse_args("(" <> _value = nested_expression, args) do
+    parse(nested_expression)
+    |> IO.inspect(limit: :infinity, label: "xx")
   end
 
   defp parse_args(function_body, args) do
@@ -36,7 +41,7 @@ defmodule Elexer do
     case parse_until(function_body, [" ", ")"], "") do
       :terminal_char_never_reached -> raise SytanxError, @missing_paren_on_arg_error
       # This is for this case "(1 )" ; we'd hit the space but then there are no arguments.
-      {"", ""} -> {Enum.reverse(args), ""}
+      {"", ""} -> {[], ""}
       {arg, ""} -> {Enum.reverse([cast_arg(arg) | args]), ""}
       {arg, rest} -> parse_args(rest, [cast_arg(arg) | args])
     end
@@ -54,8 +59,9 @@ defmodule Elexer do
     end
   end
 
-  # IS S EXPRESSION
+  # IS S EXPRESSION. Is this the right place to do this? I think nawt.
   defp cast_arg("(" <> _value = nested_expression) do
+    raise "noa"
     parse(nested_expression)
   end
 
