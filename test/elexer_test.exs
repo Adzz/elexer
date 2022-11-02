@@ -2,12 +2,6 @@ defmodule ElexerTest do
   use ExUnit.Case
   doctest Elexer
 
-  # TODO: I guess this should be allowed? So Fns and literals can be in the first
-  # position.
-  # string = "(1 )"
-  # ast = Elexer.parse(string)
-  # Then we get into a list of keywords that are allowed to be bare words.
-
   describe "parse/1 - nested S expression" do
     test "one level nested" do
       string = "(+ (+ 3 4) 2)"
@@ -26,7 +20,7 @@ defmodule ElexerTest do
       message = "Could not parse argument, missing closing bracket."
 
       assert_raise(Elexer.SytanxError, message, fn ->
-        Elexer.parse(string) |> IO.inspect(limit: :infinity, label: "")
+        Elexer.parse(string)
       end)
     end
   end
