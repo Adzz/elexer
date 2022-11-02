@@ -41,13 +41,13 @@ defmodule Elexer do
   defp parse_args(function_body, args) do
     case parse_until(function_body, [" ", ")"], "") do
       :terminal_char_never_reached -> raise SytanxError, @missing_paren_on_arg_error
-      # This is for this case "(1 )" ; we'd hit the space but then there are no arguments.
-      {"", ""} -> {[], ""}
-      # This is when a nested S expression was an arg and there is still some outer S expression to parse.
+      # If there is no arg_string that's because we hit the terminal char, so we are done
+      # with the args, we reverse and return the rest of the string to continue parsing.
       {"", rest} -> {Enum.reverse(args), rest}
-      # This is when we hit an ")"  BUT there is no more string to parse.
-      {arg, ""} -> {Enum.reverse([cast_arg(arg) | args]), ""}
-      {arg, rest} -> parse_args(rest, [cast_arg(arg) | args])
+      # If there is no rest of the string we are also done.
+      {arg_string, ""} -> {Enum.reverse([cast_arg(arg_string) | args]), ""}
+      # If there is an arg_string and some more to parse then we continue.
+      {arg_string, rest} -> parse_args(rest, [cast_arg(arg_string) | args])
     end
   end
 
