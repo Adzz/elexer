@@ -9,24 +9,6 @@ defmodule Elexer do
   Documentation for `Elexer`.
   """
 
-  # Our lang only supports ints, floats, strings and S expressions.
-  # The names of the functions have to exist somewhere so they are all built in?
-
-  # For now our lang only supports this:
-  # (function_name 1 2 3)
-  # ie function and one or more args.
-  # BUT an arg may be a nested S expression.
-
-  # def parse_s_expression("(" <> rest, handler, state) do
-  #   case parse_until(rest, " ", "") do
-  #     :terminal_char_never_reached ->
-  #       raise SytanxError, "S expression must be a fn name and args, separated by a space."
-
-  #     {fn_name, rest} ->
-  #       [{fn_name, []} | state]
-  #   end
-  # end
-
   @doc """
   Parses lisps.
   """
@@ -113,6 +95,8 @@ defmodule Elexer do
 
   # this should be public and unit tested. Then we could document but if you provide
   # multiple terminal chars then we OR them - ie stop as soon as we see any of them.
+  # Function returns a tuple of the extracted text and the rest of the text that's left to parse.
+  # (ie all the text _after_ the terminal char).
   defp parse_until("", _terminal_char, _fn_name), do: :terminal_char_never_reached
 
   defp parse_until(<<head::binary-size(1), rest::binary>>, [_ | _] = terminal_chars, fn_name) do
