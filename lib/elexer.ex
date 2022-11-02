@@ -12,30 +12,30 @@ defmodule Elexer do
   @doc """
   Parses lisps.
   """
-  def parse("(" <> string) do
+  def parse(string) do
+    {ast, ""} = do_parse(string)
+    ast
+  end
+
+  def do_parse("(" <> string) do
     case parse_until(string, [" ", ")"], "") do
       :terminal_char_never_reached ->
         raise SytanxError, "Could not parse function name, missing closing bracket."
 
       {fn_name, rest} ->
         case parse_args(rest, []) do
-          # This is the end of all args.
-          {args, ""} ->
-            {fn_name, args}
-
-          {args, rest_of_outer_s_expression} ->
-            {{fn_name, args}, rest_of_outer_s_expression}
+          {args, rest} -> {{fn_name, args}, rest}
         end
     end
   end
 
-  def parse(_) do
+  def do_parse(_) do
     raise SytanxError, "Program should start with a comment or an S - expression"
   end
 
   defp parse_args("(" <> _value = nested_expression, args) do
-    {{_, _} = nested_ast, rest} = parse(nested_expression)
-    parse_args(rest, [nested_ast | args])
+    {nested_s_expression_ast, rest} = do_parse(nested_expression)
+    parse_args(rest, [nested_s_expression_ast | args])
   end
 
   defp parse_args(function_body, args) do
