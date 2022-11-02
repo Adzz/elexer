@@ -9,10 +9,25 @@ defmodule ElexerTest do
   # Then we get into a list of keywords that are allowed to be bare words.
 
   describe "parse/1 - nested S expression" do
-    test "works well thanks" do
+    test "one level nested" do
       string = "(+ (+ 3 4) 2)"
       ast = Elexer.parse(string)
       assert ast === {"+", [{"+", [3, 4]}, 2]}
+    end
+
+    test "multi nested works" do
+      string = "(+ (+ 3 4) (+ 2 44))"
+      ast = Elexer.parse(string)
+      assert ast === {"+", [{"+", [3, 4]}, {"+", [2, 44]}]}
+    end
+
+    test "nested syntax error" do
+      string = "(+ (+ 3 4) (+ 2 44)"
+      message = "Could not parse argument, missing closing bracket."
+
+      assert_raise(Elexer.SytanxError, message, fn ->
+        Elexer.parse(string) |> IO.inspect(limit: :infinity, label: "")
+      end)
     end
   end
 

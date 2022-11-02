@@ -34,8 +34,13 @@ defmodule Elexer do
   end
 
   defp parse_args("(" <> _value = nested_expression, args) do
-    {nested_s_expression_ast, rest} = do_parse(nested_expression)
-    parse_args(rest, [nested_s_expression_ast | args])
+    case do_parse(nested_expression) do
+      {nested_s_expression_ast, ")" = _rest_of_source_code} ->
+        {Enum.reverse([nested_s_expression_ast | args]), ""}
+
+      {nested_s_expression_ast, rest_of_source_code} ->
+        parse_args(rest_of_source_code, [nested_s_expression_ast | args])
+    end
   end
 
   defp parse_args(function_body, args) do
@@ -45,7 +50,9 @@ defmodule Elexer do
       # with the args, we reverse and return the rest of the string to continue parsing.
       {"", rest} -> {Enum.reverse(args), rest}
       # If there is no rest of the string we are also done.
+      {arg_string, ")"} -> {Enum.reverse([cast_arg(arg_string) | args]), ")"}
       {arg_string, ""} -> {Enum.reverse([cast_arg(arg_string) | args]), ""}
+      # {arg_string, ""} -> {Enum.reverse([cast_arg(arg_string) | args]), ""}
       # If there is an arg_string and some more to parse then we continue.
       {arg_string, rest} -> parse_args(rest, [cast_arg(arg_string) | args])
     end
