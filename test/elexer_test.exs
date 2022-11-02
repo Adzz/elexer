@@ -15,6 +15,21 @@ defmodule ElexerTest do
       assert ast === {"+", [{"+", [3, 4]}, {"+", [2, 44]}]}
     end
 
+    test "multi nested 2 - spacing weird" do
+      string = "(+ (+ 3 4) (+ 2 44) )"
+      ast = Elexer.parse(string)
+      assert ast === {"+", [{"+", [3, 4]}, {"+", [2, 44]}]}
+    end
+
+    test "multi nested extra close bracket" do
+      string = "(+ (+ 3 4) (+ 2 44)))"
+      message = "Could not parse argument, missing closing bracket."
+
+      assert_raise(Elexer.SytanxError, message, fn ->
+        Elexer.parse(string)
+      end)
+    end
+
     test "nested syntax error" do
       string = "(+ (+ 3 4) (+ 2 44)"
       message = "Could not parse argument, missing closing bracket."

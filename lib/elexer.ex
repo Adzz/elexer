@@ -13,8 +13,10 @@ defmodule Elexer do
   Parses lisps.
   """
   def parse(string) do
-    {ast, ""} = do_parse(string)
-    ast
+    case do_parse(string) do
+      {ast, ")"} -> raise SytanxError, "One too many closing parens :("
+      {ast, ""} -> ast
+    end
   end
 
   def do_parse("(" <> string) do
@@ -34,10 +36,12 @@ defmodule Elexer do
   end
 
   defp parse_args("(" <> _value = nested_expression, args) do
-    case do_parse(nested_expression) do
+    case do_parse(nested_expression) |> IO.inspect(limit: :infinity, label: "dp") do
+      # If the rest of the source code is just a closing bracket then we are finished.
       {nested_s_expression_ast, ")" = _rest_of_source_code} ->
         {Enum.reverse([nested_s_expression_ast | args]), ""}
 
+    # If the rest contains other things then there must be more args to parse so we continue
       {nested_s_expression_ast, rest_of_source_code} ->
         parse_args(rest_of_source_code, [nested_s_expression_ast | args])
     end
@@ -48,6 +52,10 @@ defmodule Elexer do
       :terminal_char_never_reached -> raise SytanxError, @missing_paren_on_arg_error
       # If there is no arg_string that's because we hit the terminal char, so we are done
       # with the args, we reverse and return the rest of the string to continue parsing.
+      # {"", ")"} ->
+        # function_body |> IO.inspect(limit: :infinity, label: "")
+        # raise "hi"
+        # {Enum.reverse(args), rest}
       {"", rest} -> {Enum.reverse(args), rest}
       # If there is no rest of the string we are also done.
       {arg_string, ")"} -> {Enum.reverse([cast_arg(arg_string) | args]), ")"}
