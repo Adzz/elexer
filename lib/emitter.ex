@@ -11,9 +11,9 @@ defmodule Elexer.Emitter do
   @number_arg_event :number_arg
   @end_file_event :end_file
 
-  def read_source_code(@open_paren <> function_body, handler, state) do
+  def read_source_code(<<@open_paren, function_body::binary>>, handler, state) do
     # For now we say you always expect there to be a function name.
-    case parse_until(function_body, @space, "") do
+    case function_body |> parse_until(@space, "") do
       :terminal_char_never_reached ->
         {:syntax_error,
          "Could not parse function name. Fn should be separated from args by a space"}
@@ -32,19 +32,19 @@ defmodule Elexer.Emitter do
     {:syntax_error, "Program should start with a comment or an S - expression"}
   end
 
-  defp parse_args(@close_paren <> rest, handler, state) do
+  defp parse_args(<<@close_paren, rest::binary>>, handler, state) do
     {:ok, new_state} = handler.handle_event(@close_fn_event, state)
     parse_args(rest, handler, new_state)
   end
 
-  defp parse_args("", handler, state) do
+  defp parse_args(<<>>, handler, state) do
     handler.handle_event(@end_file_event, state)
   end
 
   # PARSE STRING
   # Currently we don't support string escaping.
-  defp parse_args(@speech_mark <> function_body, handler, state) do
-    case parse_until(function_body, @speech_mark, "") do
+  defp parse_args(<<@speech_mark, function_body::binary>>, handler, state) do
+    case function_body |> parse_until(@speech_mark, "") do
       :terminal_char_never_reached ->
         {:syntax_error, "Binary was missing closing \""}
 
@@ -57,14 +57,14 @@ defmodule Elexer.Emitter do
   end
 
   # Parse S expression arg
-  defp parse_args(@open_paren <> _function_body = nested_expression, handler, state) do
+  defp parse_args(<<@open_paren, _function_body::binary>> = nested_expression, handler, state) do
     # we need the rest of the source code?
     read_source_code(nested_expression, handler, state)
   end
 
   # IS NEGATIVE NUMBER
-  defp parse_args(@negative_symbol <> value, handler, state) do
-    case parse_until(value, [@space, @close_paren], "") do
+  defp parse_args(<<@negative_symbol, value::binary>>, handler, state) do
+    case value |> parse_until([@space, @close_paren], "") do
       :terminal_char_never_reached ->
         {:syntax_error, "Binary was missing closing", value}
 
@@ -102,7 +102,7 @@ defmodule Elexer.Emitter do
 
   # IS NUMBER
   defp parse_args(value, handler, state) do
-    case parse_until(value, [@space, @close_paren], "") do
+    case value |> parse_until([@space, @close_paren], "") do
       :terminal_char_never_reached ->
         {:syntax_error, "Could not parse argument, missing closing bracket."}
 
