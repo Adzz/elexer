@@ -94,13 +94,6 @@ defmodule ElexerTest do
       assert ast === {"+", [1, 2, 2, 3, 4, 5, 6]}
     end
 
-    # In lisp this would be quoted and that would be parsed different
-    # test "bare literal is allowed" do
-    #   string = "(1 )"
-    #   ast = Elexer.parse(string)
-    #   assert ast == {"1", []}
-    # end
-
     test "we can cast to float" do
       string = "(+ 1 2.1 -2.2 3 4 5 6)"
       ast = Elexer.parse(string)
@@ -139,7 +132,6 @@ defmodule ElexerTest do
   end
 
   describe "parse/1 ints and floats errors" do
-    # Does this require a type system? To know which args are good or not.
     test "we syntax error when we parse args" do
       string = "(+ 1, 2)"
       message = "Could not cast value to number: \"1,\""
