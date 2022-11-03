@@ -20,8 +20,6 @@ defmodule Elexer.Emitter do
 
       {@space, fn_name, rest} ->
         case handler.handle_event(@open_fn_event, fn_name, state) do
-          # :halt -> {:error, "something went wrong"}
-
           {:ok, updated_state} ->
             parse_args(rest, handler, updated_state)
         end
@@ -48,8 +46,6 @@ defmodule Elexer.Emitter do
       :terminal_char_never_reached ->
         {:syntax_error, "Binary was missing closing \""}
 
-      # raise Elexer.SytanxError, "Binary was missing closing #{@speech_mark}"
-
       {@speech_mark, string, rest_of_source_code} ->
         {:ok, new_state} = handler.handle_event(@string_arg_event, string, state)
         parse_args(String.trim(rest_of_source_code), handler, new_state)
@@ -68,20 +64,16 @@ defmodule Elexer.Emitter do
       :terminal_char_never_reached ->
         {:syntax_error, "Binary was missing closing", value}
 
-      # raise Elexer.SytanxError, "Could not cast value to number: #{inspect(value)}"
-
       {@space, number_string, rest_of_source_code} ->
         # if it's a space then we found an arg so do our thang
         case parse_absolute_number(number_string) do
           :error ->
             {:syntax_error, "Could not cast value to number: ", @negative_symbol <> number_string}
 
-          # raise Elexer.SytanxError,
-          # "Could not cast value to number: #{inspect(@negative_symbol <> number_string)}"
-
           number ->
-            {:ok, new_state} = handler.handle_event(@number_arg_event, -number, state)
-            parse_args(String.trim(rest_of_source_code), handler, new_state)
+            with {:ok, new_state} <- handler.handle_event(@number_arg_event, -number, state) do
+              parse_args(String.trim(rest_of_source_code), handler, new_state)
+            end
         end
 
       {@close_paren, number_string, rest_of_source_code} ->
@@ -89,13 +81,11 @@ defmodule Elexer.Emitter do
           :error ->
             {:syntax_error, "Could not cast value to number: ", @negative_symbol <> number_string}
 
-          # raise Elexer.SytanxError,
-          # "Could not cast value to number: #{inspect(@negative_symbol <> number_string)}"
-
           number ->
-            {:ok, new_state} = handler.handle_event(@number_arg_event, -number, state)
-            {:ok, new_state} = handler.handle_event(@close_fn_event, new_state)
-            parse_args(String.trim(rest_of_source_code), handler, new_state)
+            with {:ok, new_state} <- handler.handle_event(@number_arg_event, -number, state),
+                 {:ok, new_state} <- handler.handle_event(@close_fn_event, new_state) do
+              parse_args(String.trim(rest_of_source_code), handler, new_state)
+            end
         end
     end
   end
@@ -106,19 +96,16 @@ defmodule Elexer.Emitter do
       :terminal_char_never_reached ->
         {:syntax_error, "Could not parse argument, missing closing bracket."}
 
-      # raise Elexer.SytanxError, "Could not parse argument, missing closing bracket."
-
       {@space, number_string, rest_of_source_code} ->
         # if it's a space then we found an arg so do our thang
         case parse_absolute_number(number_string) do
           :error ->
             {:syntax_error, "Could not cast value to number: ", number_string}
 
-          # raise Elexer.SytanxError, "Could not cast value to number: #{inspect(number_string)}"
-
           number ->
-            {:ok, new_state} = handler.handle_event(@number_arg_event, number, state)
-            parse_args(String.trim(rest_of_source_code), handler, new_state)
+            with {:ok, new_state} <- handler.handle_event(@number_arg_event, number, state) do
+              parse_args(String.trim(rest_of_source_code), handler, new_state)
+            end
         end
 
       {@close_paren, number_string, rest_of_source_code} ->
@@ -126,20 +113,17 @@ defmodule Elexer.Emitter do
           :error ->
             {:syntax_error, "Could not cast value to number: ", number_string}
 
-          # raise Elexer.SytanxError, "Could not cast value to number: #{inspect(number_string)}"
-
           number ->
-            {:ok, new_state} = handler.handle_event(@number_arg_event, number, state)
-            {:ok, new_state} = handler.handle_event(@close_fn_event, new_state)
-            parse_args(String.trim(rest_of_source_code), handler, new_state)
+            with {:ok, new_state} <- handler.handle_event(@number_arg_event, number, state),
+                 {:ok, new_state} = handler.handle_event(@close_fn_event, new_state) do
+              parse_args(String.trim(rest_of_source_code), handler, new_state)
+            end
         end
     end
   end
 
-  defp parse_absolute_number("") do
-    # This is "there is a bug in the parser" and not "user typed the wrong source code".
-    raise "Parser Error!"
-  end
+  # This is "there is a bug in the parser" and not "user typed the wrong source code".
+  defp parse_absolute_number(""), do: raise("Parser Error!")
 
   defp parse_absolute_number(value) do
     case parse_integer(value, 0) do
