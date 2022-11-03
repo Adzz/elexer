@@ -2,44 +2,48 @@ defmodule Elexer.StackHandler do
   @moduledoc """
   TODO: add halting and early termination to this.
   """
-  def handle_event(:open_s_expression, fn_name, state) do
-    # state |> IO.inspect(limit: :infinity, label: "before open_s_expression")
+  @with_trace Application.compile_env!(:elexer, :with_trace?)
 
-    {:ok, [{fn_name, []} | state]}
-    # |> IO.inspect(limit: :infinity, label: "after open_s_expression")
+  defmacro with_trace(state, event, result) do
+    if @with_trace do
+      quote do
+        IO.inspect(unquote(state), limit: :infinity, label: "before #{unquote(event)}")
+        IO.inspect(unquote(result), limit: :infinity, label: "after #{unquote(event)}")
+      end
+    else
+      quote do
+        unquote(result)
+      end
+    end
+  end
+
+  def handle_event(:open_s_expression, fn_name, state) do
+    with_trace(state, :open_s_expression, {:ok, [{fn_name, []} | state]})
   end
 
   def handle_event(:string_arg, string, state) do
-    # state |> IO.inspect(limit: :infinity, label: "before string_arg")
     [{fn_name, args} | rest_of_state] = state
-
-    {:ok, [{fn_name, [string | args]} | rest_of_state]}
-    # |> IO.inspect(limit: :infinity, label: "after string_arg")
+    with_trace(state, :string_arg, {:ok, [{fn_name, [string | args]} | rest_of_state]})
   end
 
   def handle_event(:number_arg, number, state) do
-    # state |> IO.inspect(limit: :infinity, label: "before number_arg")
     [{fn_name, args} | rest_of_state] = state
-
-    {:ok, [{fn_name, [number | args]} | rest_of_state]}
-    # |> IO.inspect(limit: :infinity, label: "after number_arg")
+    with_trace(state, :number_arg, {:ok, [{fn_name, [number | args]} | rest_of_state]})
   end
 
-  def handle_event(:close_s_expression, [{fn_name, args}] = _state) do
-    # state |> IO.inspect(limit: :infinity, label: "before close_s_expression 1")
-
-    {:ok, {fn_name, Enum.reverse(args)}}
-    # |> IO.inspect(limit: :infinity, label: "after close_s_expression 1")
+  def handle_event(:close_s_expression, [{fn_name, args}]) do
+    with_trace([{fn_name, args}], :close_s_expression, {:ok, {fn_name, Enum.reverse(args)}})
   end
 
   def handle_event(
         :close_s_expression,
-        [{fn_name, args}, {parent_fn_name, parent_args} | rest_of_state] = _state
+        [{fn_name, args}, {parent_fn_name, parent_args} | rest_of_state]
       ) do
-    # state |> IO.inspect(limit: :infinity, label: "before close_s_expression 2")
-
-    {:ok, [{parent_fn_name, [{fn_name, Enum.reverse(args)} | parent_args]} | rest_of_state]}
-    # |> IO.inspect(limit: :infinity, label: "after close_s_expression 2")
+    with_trace(
+      [{fn_name, args}, {parent_fn_name, parent_args} | rest_of_state],
+      :close_s_expression,
+      {:ok, [{parent_fn_name, [{fn_name, Enum.reverse(args)} | parent_args]} | rest_of_state]}
+    )
   end
 
   def handle_event(:close_s_expression, _state) do
@@ -52,9 +56,6 @@ defmodule Elexer.StackHandler do
   end
 
   def handle_event(:end_file, {_fn_name, _args} = ast) do
-    # ast |> IO.inspect(limit: :infinity, label: "before end_file_event")
-
-    {:ok, ast}
-    # |> IO.inspect(limit: :infinity, label: "after end_file_event")
+    with_trace(ast, :end_file, {:ok, ast})
   end
 end
