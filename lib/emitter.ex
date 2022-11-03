@@ -73,6 +73,19 @@ defmodule Elexer.Emitter do
           number ->
             with {:ok, new_state} <- handler.handle_event(@number_arg_event, -number, state) do
               parse_args(String.trim(rest_of_source_code), handler, new_state)
+            else
+              {:halt, state} ->
+                capture = fn new_state ->
+                  rest_of_source_code
+                  |> String.trim()
+                  |> parse_args(handler, new_state)
+                  |> Elexer.unwrap_parse_result()
+                end
+
+                # Is it better to close over the state? Or expose it and allow something
+                # else to modify it? Stream do the latter I feel but what is the use case
+                # for wanting to be able to do that?
+                {:halt, capture, state}
             end
         end
 
@@ -85,6 +98,21 @@ defmodule Elexer.Emitter do
             with {:ok, new_state} <- handler.handle_event(@number_arg_event, -number, state),
                  {:ok, new_state} <- handler.handle_event(@close_fn_event, new_state) do
               parse_args(String.trim(rest_of_source_code), handler, new_state)
+            else
+              {:halt, state} ->
+                capture = fn new_state ->
+                  {:ok, new_state} = handler.handle_event(@close_fn_event, new_state)
+
+                  rest_of_source_code
+                  |> String.trim()
+                  |> parse_args(handler, new_state)
+                  |> Elexer.unwrap_parse_result()
+                end
+
+                # Is it better to close over the state? Or expose it and allow something
+                # else to modify it? Stream do the latter I feel but what is the use case
+                # for wanting to be able to do that?
+                {:halt, capture, state}
             end
         end
     end
@@ -105,6 +133,19 @@ defmodule Elexer.Emitter do
           number ->
             with {:ok, new_state} <- handler.handle_event(@number_arg_event, number, state) do
               parse_args(String.trim(rest_of_source_code), handler, new_state)
+            else
+              {:halt, state} ->
+                capture = fn new_state ->
+                  rest_of_source_code
+                  |> String.trim()
+                  |> parse_args(handler, new_state)
+                  |> Elexer.unwrap_parse_result()
+                end
+
+                # Is it better to close over the state? Or expose it and allow something
+                # else to modify it? Stream do the latter I feel but what is the use case
+                # for wanting to be able to do that?
+                {:halt, capture, state}
             end
         end
 
@@ -117,6 +158,23 @@ defmodule Elexer.Emitter do
             with {:ok, new_state} <- handler.handle_event(@number_arg_event, number, state),
                  {:ok, new_state} = handler.handle_event(@close_fn_event, new_state) do
               parse_args(String.trim(rest_of_source_code), handler, new_state)
+            else
+              {:halt, state} ->
+                capture = fn new_state ->
+                  # The thing this is missing is the context that it's being called from
+                  # Elexer.parse, so we are missing the unwrap aspect.
+                  {:ok, new_state} = handler.handle_event(@close_fn_event, new_state)
+
+                  rest_of_source_code
+                  |> String.trim()
+                  |> parse_args(handler, new_state)
+                  |> Elexer.unwrap_parse_result()
+                end
+
+                # Is it better to close over the state? Or expose it and allow something
+                # else to modify it? Stream do the latter I feel but what is the use case
+                # for wanting to be able to do that?
+                {:halt, capture, state}
             end
         end
     end
