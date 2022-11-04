@@ -1,6 +1,18 @@
 defmodule Elexer do
   @moduledoc """
   Documentation for `Elexer`.
+
+
+  ### Interpreting the code
+
+  So here is the thing. The AST forms a nested tree of sorts. But that's mad in some ways
+  We build a tree out of the source code then we DFS the result. But to build a tree we
+  build a stack... So why not just use the stack as the AST? That would make "executing"
+  it much simpler because we'd just need to pope an instruction off of the stack and
+  execute it. Is this what a stack based lang does?
+
+  Executing the stack or executing a recursive function are two ways of doing the same
+  thing probably.
   """
 
   def parse(source_code, handler \\ Elexer.StackHandler) do

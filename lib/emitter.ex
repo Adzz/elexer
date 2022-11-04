@@ -11,6 +11,8 @@ defmodule Elexer.Emitter do
   @number_arg_event :number_arg
   @end_file_event :end_file
 
+  @digits ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
   def read_source_code(<<@open_paren, function_body::binary>>, handler, state) do
     # For now we say you always expect there to be a function name.
     case function_body |> parse_until(@space, "") do
@@ -32,7 +34,7 @@ defmodule Elexer.Emitter do
 
   defp parse_args(<<@close_paren, rest::binary>>, handler, state) do
     case handler.handle_event(@close_fn_event, state) do
-      {:ok, new_state} -> parse_args(rest, handler, new_state)
+      {:ok, new_state} -> parse_args(String.trim(rest), handler, new_state)
       {:halt, state} -> {:halt, &Elexer.unwrap(parse_args(rest, handler, &1)), state}
     end
   end
@@ -97,7 +99,8 @@ defmodule Elexer.Emitter do
   end
 
   # IS NUMBER
-  defp parse_args(value, handler, state) do
+  defp parse_args(<<number::binary-size(1), _::binary>> = value, handler, state)
+       when number in @digits do
     case value |> parse_until([@space, @close_paren], "") do
       :terminal_char_never_reached ->
         {:syntax_error, "Could not parse argument, missing closing bracket."}
@@ -115,6 +118,10 @@ defmodule Elexer.Emitter do
           number -> emitt_number_events(number, handler, state, rest_of_source_code)
         end
     end
+  end
+
+  defp parse_args(<<head::binary-size(1), _::binary>>, _handler, _state) do
+    {:syntax_error, "Unrecognised argument type: ", head}
   end
 
   defp emitt_number_event(number, handler, state, rest_of_source_code) do
