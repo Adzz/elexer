@@ -24,5 +24,3 @@ elexer-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
-
-/test/generative_fixtures/

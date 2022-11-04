@@ -1,0 +1,6 @@
+# These next three lines basically say "ignore all files in this folder but not
+# the .gitignore" this has the effect of keeping the responses/ folder in git but none
+# of the files within it.
+*
+*/
+!.gitignore
