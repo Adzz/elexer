@@ -20,8 +20,8 @@ defmodule Elexer.Emitter do
 
       {@space, fn_name, rest} ->
         case handler.handle_event(@open_fn_event, fn_name, state) do
-          {:ok, updated_state} ->
-            parse_args(rest, handler, updated_state)
+          {:ok, updated_state} -> parse_args(rest, handler, updated_state)
+          {:halt, state} -> {:halt, &Elexer.unwrap(parse_args(rest, handler, &1)), state}
         end
     end
   end
@@ -31,12 +31,17 @@ defmodule Elexer.Emitter do
   end
 
   defp parse_args(<<@close_paren, rest::binary>>, handler, state) do
-    {:ok, new_state} = handler.handle_event(@close_fn_event, state)
-    parse_args(rest, handler, new_state)
+    case handler.handle_event(@close_fn_event, state) do
+      {:ok, new_state} -> parse_args(rest, handler, new_state)
+      {:halt, state} -> {:halt, &Elexer.unwrap(parse_args(rest, handler, &1)), state}
+    end
   end
 
   defp parse_args(<<>>, handler, state) do
-    handler.handle_event(@end_file_event, state)
+    case handler.handle_event(@end_file_event, state) do
+      {:ok, state} -> {:ok, state}
+      {:halt, state} -> {:halt, &Elexer.unwrap/1, state}
+    end
   end
 
   # PARSE STRING
@@ -47,8 +52,14 @@ defmodule Elexer.Emitter do
         {:syntax_error, "Binary was missing closing \""}
 
       {@speech_mark, string, rest_of_source_code} ->
-        {:ok, new_state} = handler.handle_event(@string_arg_event, string, state)
-        parse_args(String.trim(rest_of_source_code), handler, new_state)
+        case handler.handle_event(@string_arg_event, string, state) do
+          {:ok, new_state} ->
+            parse_args(String.trim(rest_of_source_code), handler, new_state)
+
+          {:halt, state} ->
+            capture = &Elexer.unwrap(parse_args(String.trim(rest_of_source_code), handler, &1))
+            {:halt, capture, state}
+        end
     end
   end
 
@@ -71,22 +82,7 @@ defmodule Elexer.Emitter do
             {:syntax_error, "Could not cast value to number: ", @negative_symbol <> number_string}
 
           number ->
-            with {:ok, new_state} <- handler.handle_event(@number_arg_event, -number, state) do
-              parse_args(String.trim(rest_of_source_code), handler, new_state)
-            else
-              {:halt, state} ->
-                capture = fn new_state ->
-                  rest_of_source_code
-                  |> String.trim()
-                  |> parse_args(handler, new_state)
-                  |> Elexer.unwrap_parse_result()
-                end
-
-                # Is it better to close over the state? Or expose it and allow something
-                # else to modify it? Stream do the latter I feel but what is the use case
-                # for wanting to be able to do that?
-                {:halt, capture, state}
-            end
+            emitt_number_event(-number, handler, state, rest_of_source_code)
         end
 
       {@close_paren, number_string, rest_of_source_code} ->
@@ -95,25 +91,7 @@ defmodule Elexer.Emitter do
             {:syntax_error, "Could not cast value to number: ", @negative_symbol <> number_string}
 
           number ->
-            with {:ok, new_state} <- handler.handle_event(@number_arg_event, -number, state),
-                 {:ok, new_state} <- handler.handle_event(@close_fn_event, new_state) do
-              parse_args(String.trim(rest_of_source_code), handler, new_state)
-            else
-              {:halt, state} ->
-                capture = fn new_state ->
-                  {:ok, new_state} = handler.handle_event(@close_fn_event, new_state)
-
-                  rest_of_source_code
-                  |> String.trim()
-                  |> parse_args(handler, new_state)
-                  |> Elexer.unwrap_parse_result()
-                end
-
-                # Is it better to close over the state? Or expose it and allow something
-                # else to modify it? Stream do the latter I feel but what is the use case
-                # for wanting to be able to do that?
-                {:halt, capture, state}
-            end
+            emitt_number_events(-number, handler, state, rest_of_source_code)
         end
     end
   end
@@ -127,56 +105,53 @@ defmodule Elexer.Emitter do
       {@space, number_string, rest_of_source_code} ->
         # if it's a space then we found an arg so do our thang
         case parse_absolute_number(number_string) do
-          :error ->
-            {:syntax_error, "Could not cast value to number: ", number_string}
-
-          number ->
-            with {:ok, new_state} <- handler.handle_event(@number_arg_event, number, state) do
-              parse_args(String.trim(rest_of_source_code), handler, new_state)
-            else
-              {:halt, state} ->
-                capture = fn new_state ->
-                  rest_of_source_code
-                  |> String.trim()
-                  |> parse_args(handler, new_state)
-                  |> Elexer.unwrap_parse_result()
-                end
-
-                # Is it better to close over the state? Or expose it and allow something
-                # else to modify it? Stream do the latter I feel but what is the use case
-                # for wanting to be able to do that?
-                {:halt, capture, state}
-            end
+          :error -> {:syntax_error, "Could not cast value to number: ", number_string}
+          number -> emitt_number_event(number, handler, state, rest_of_source_code)
         end
 
       {@close_paren, number_string, rest_of_source_code} ->
         case parse_absolute_number(number_string) do
-          :error ->
-            {:syntax_error, "Could not cast value to number: ", number_string}
-
-          number ->
-            with {:ok, new_state} <- handler.handle_event(@number_arg_event, number, state),
-                 {:ok, new_state} = handler.handle_event(@close_fn_event, new_state) do
-              parse_args(String.trim(rest_of_source_code), handler, new_state)
-            else
-              {:halt, state} ->
-                capture = fn new_state ->
-                  # The thing this is missing is the context that it's being called from
-                  # Elexer.parse, so we are missing the unwrap aspect.
-                  {:ok, new_state} = handler.handle_event(@close_fn_event, new_state)
-
-                  rest_of_source_code
-                  |> String.trim()
-                  |> parse_args(handler, new_state)
-                  |> Elexer.unwrap_parse_result()
-                end
-
-                # Is it better to close over the state? Or expose it and allow something
-                # else to modify it? Stream do the latter I feel but what is the use case
-                # for wanting to be able to do that?
-                {:halt, capture, state}
-            end
+          :error -> {:syntax_error, "Could not cast value to number: ", number_string}
+          number -> emitt_number_events(number, handler, state, rest_of_source_code)
         end
+    end
+  end
+
+  defp emitt_number_event(number, handler, state, rest_of_source_code) do
+    case handler.handle_event(@number_arg_event, number, state) do
+      {:ok, new_state} ->
+        rest_of_source_code |> String.trim() |> parse_args(handler, new_state)
+
+      {:halt, state} ->
+        capture = fn new_state ->
+          rest_of_source_code
+          |> String.trim()
+          |> parse_args(handler, new_state)
+          |> Elexer.unwrap()
+        end
+
+        {:halt, capture, state}
+    end
+  end
+
+  defp emitt_number_events(number, handler, state, rest_of_source_code) do
+    case handler.handle_event(@number_arg_event, number, state) do
+      {:ok, state} ->
+        emit_close_fn_event(handler, rest_of_source_code, state)
+
+      {:halt, state} ->
+        {:halt, &Elexer.unwrap(emit_close_fn_event(handler, rest_of_source_code, &1)), state}
+    end
+  end
+
+  defp emit_close_fn_event(handler, rest_of_source_code, state) do
+    case handler.handle_event(@close_fn_event, state) do
+      {:ok, new_state} ->
+        parse_args(String.trim(rest_of_source_code), handler, new_state)
+
+      {:halt, state} ->
+        capture = &Elexer.unwrap(parse_args(String.trim(rest_of_source_code), handler, &1))
+        {:halt, capture, state}
     end
   end
 
