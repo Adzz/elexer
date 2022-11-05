@@ -10,9 +10,10 @@ Don't use it.
 Lisp parser
 
 Write code that takes some Lisp code and returns an abstract syntax tree. The AST should represent the structure of the code and the meaning of each token. For example, if your code is given
-    ```elixir
-    "(first (list 1 (+ 2 3) 9))"
-    ```
+
+```elixir
+"(first (list 1 (+ 2 3) 9))"
+```
 
 it could return a nested array like
 
