@@ -17,7 +17,7 @@ defmodule Elexer do
 
   def parse(source_code, handler \\ Elexer.StackHandler) do
     source_code
-    |> Elexer.EmitterNoHalt.read_source_code(handler, [])
+    |> Elexer.Emitter.read_source_code(handler, [])
     |> unwrap()
   end
 
@@ -32,6 +32,6 @@ defmodule Elexer do
   end
 
   def parse(source_code, handler, state) do
-    Elexer.EmitterNoHalt.read_source_code(source_code, handler, state) |> unwrap()
+    Elexer.Emitter.read_source_code(source_code, handler, state) |> unwrap()
   end
 end

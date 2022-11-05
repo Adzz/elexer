@@ -6,7 +6,7 @@ defmodule GenerativeTests do
   files =
     folder
     |> File.ls!()
-    |> Enum.reject(&(&1 == ".gitignore"))
+    |> Enum.reject(&(&1 in [".gitignore", "perf"]))
 
   FakeSauce.generate(folder, 0, 100, 6)
 
