@@ -1,3 +1,13 @@
+defmodule Elexer.Ignore do
+  def handle_event(event, fn_name, state) do
+    {:ok, state}
+  end
+
+  def handle_event(event, state) do
+    {:ok, state}
+  end
+end
+
 defmodule Elexer.StackHandler do
   @moduledoc """
   Creates a stack of elements as the source code is parsed, returning a tree of sorts; a

@@ -2,7 +2,11 @@ defmodule GenerativeTests do
   use ExUnit.Case
 
   folder = Path.expand("./test/generative_fixtures/") <> "/"
-  files = folder |> File.ls!()
+
+  files =
+    folder
+    |> File.ls!()
+    |> Enum.reject(&(&1 == ".gitignore"))
 
   FakeSauce.generate(folder, 100, 5, 10)
 
