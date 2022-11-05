@@ -11,7 +11,7 @@ defmodule ElexerTest do
   describe "pausing the parser" do
     test "we can pause it halfway through?" do
       string = "(+ 1 -2)"
-      assert {:halt, capture, [{"+", [1]}] = state} = Elexer.parse(string, PauseHandler)
+      assert {:halt, capture, [{"+", [1]}] = state} = Elexer.parse(string, HaltHandler)
       assert {:halt, capture, state} = capture.(state)
       ast = capture.(state)
       assert ast == {"+", [1, -2]}

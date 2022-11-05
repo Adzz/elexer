@@ -1,4 +1,4 @@
-defmodule PauseHandler do
+defmodule HaltHandler do
   @moduledoc """
   Used for testing the pause feature of the parser...
   """
