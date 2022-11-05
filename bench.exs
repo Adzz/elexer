@@ -7,13 +7,17 @@ source = File.read!("/Users/Adz/Projects/elexer/test/generative_fixtures/perf/so
 Benchee.run(
   %{
     "4mb file stack handler" => fn ->
-      Elexer.Emitter.read_source_code(source, Elexer.StackHandler, []) |> Elexer.unwrap()
+      source
+      |> Elexer.Emitter.read_source_code(Elexer.StackHandler, [])
+      |> Elexer.unwrap()
     end,
     # "4mb file Ignore handler" => fn ->
     #   Elexer.Emitter.read_source_code(source, Elexer.Ignore, []) |> Elexer.unwrap()
     # end,
     "4mb stack handler No halt emitter" => fn ->
-      Elexer.EmitterNoHalt.read_source_code(source, Elexer.StackHandler, []) |> Elexer.unwrap()
+      source
+      |> Elexer.EmitterNoHalt.read_source_code(Elexer.StackHandler, [])
+      |> Elexer.unwrap()
     end
   },
   memory_time: 1,
