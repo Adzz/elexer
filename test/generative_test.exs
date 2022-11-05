@@ -8,7 +8,7 @@ defmodule GenerativeTests do
     |> File.ls!()
     |> Enum.reject(&(&1 in [".gitignore", "perf"]))
 
-  FakeSauce.generate(folder, 0, 100, 6)
+  FakeSauce.generate(folder, 100, 100, 10, 10)
 
   for file <- files do
     test "#{file}" do

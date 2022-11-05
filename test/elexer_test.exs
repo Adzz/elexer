@@ -16,9 +16,6 @@ defmodule ElexerTest do
       ast = capture.(state)
       assert ast == {"+", [1, -2]}
     end
-
-    test "and we can continue" do
-    end
   end
 
   describe "parse/1 - nested S expression" do
