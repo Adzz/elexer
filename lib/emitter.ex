@@ -32,9 +32,13 @@ defmodule Elexer.Emitter do
     {:syntax_error, "Program should start with a comment or an S - expression"}
   end
 
+  defp parse_args(<<@space, rest::binary>>, handler, state) do
+    parse_args(rest, handler, state)
+  end
+
   defp parse_args(<<@close_paren, rest::binary>>, handler, state) do
     case handler.handle_event(@close_fn_event, state) do
-      {:ok, new_state} -> parse_args(String.trim(rest), handler, new_state)
+      {:ok, new_state} -> parse_args(rest, handler, new_state)
       {:halt, state} -> {:halt, &Elexer.unwrap(parse_args(rest, handler, &1)), state}
     end
   end
@@ -56,10 +60,10 @@ defmodule Elexer.Emitter do
       {@speech_mark, string, rest_of_source_code} ->
         case handler.handle_event(@string_arg_event, string, state) do
           {:ok, new_state} ->
-            parse_args(String.trim(rest_of_source_code), handler, new_state)
+            parse_args(rest_of_source_code, handler, new_state)
 
           {:halt, state} ->
-            capture = &Elexer.unwrap(parse_args(String.trim(rest_of_source_code), handler, &1))
+            capture = &Elexer.unwrap(parse_args(rest_of_source_code, handler, &1))
             {:halt, capture, state}
         end
     end
@@ -127,12 +131,11 @@ defmodule Elexer.Emitter do
   defp emitt_number_event(number, handler, state, rest_of_source_code) do
     case handler.handle_event(@number_arg_event, number, state) do
       {:ok, new_state} ->
-        rest_of_source_code |> String.trim() |> parse_args(handler, new_state)
+        rest_of_source_code |> parse_args(handler, new_state)
 
       {:halt, state} ->
         capture = fn new_state ->
           rest_of_source_code
-          |> String.trim()
           |> parse_args(handler, new_state)
           |> Elexer.unwrap()
         end
@@ -154,10 +157,10 @@ defmodule Elexer.Emitter do
   defp emit_close_fn_event(handler, rest_of_source_code, state) do
     case handler.handle_event(@close_fn_event, state) do
       {:ok, new_state} ->
-        parse_args(String.trim(rest_of_source_code), handler, new_state)
+        parse_args(rest_of_source_code, handler, new_state)
 
       {:halt, state} ->
-        capture = &Elexer.unwrap(parse_args(String.trim(rest_of_source_code), handler, &1))
+        capture = &Elexer.unwrap(parse_args(rest_of_source_code, handler, &1))
         {:halt, capture, state}
     end
   end
@@ -167,8 +170,8 @@ defmodule Elexer.Emitter do
 
   defp parse_absolute_number(value) do
     case parse_integer(value, 0) do
-      :number_parse_error -> :error
       :float -> parse_float(value)
+      :number_parse_error -> :error
       int -> int
     end
   end
