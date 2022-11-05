@@ -11,6 +11,25 @@ source_code = "(first (list 1 (+ 2 3) 9))"
 Elexer.parse(source_code)
 ```
 
+## The assignment
+
+Lisp parser
+
+Write code that takes some Lisp code and returns an abstract syntax tree. The AST should represent the structure of the code and the meaning of each token. For example, if your code is given
+
+```elixir
+"(first (list 1 (+ 2 3) 9))"
+```
+
+it could return a nested array like
+
+```elixir
+["first", ["list", 1, ["+", 2, 3], 9]].
+```
+
+During your interview, you will pair on writing an interpreter to run the AST. You can start by implementing a single built-in function (for example, `+`) and add more if you have time.
+
+
 ## Features
 
 ### Handlers
@@ -45,20 +64,10 @@ continuation.(state)
 
 I'm not really sure why this would be good but one thought is if this parser was a Nif that halting would maybe play nice with the BEAM and stuff. It's not a nif though so it's more just a "I wonder if this is possible" kind of thing.
 
-## The assignment
+### Generative Tests
 
-Lisp parser
+I've done a very simple swing at generative testing. It has no shrinking but you can basically generate some random source code then run that through the parser. Really it only tests that the parser doesn't error as it's hard to make assertions on randomly generated data unless you know the rules for how that data was generated. It did help to catch a bug though!
 
-Write code that takes some Lisp code and returns an abstract syntax tree. The AST should represent the structure of the code and the meaning of each token. For example, if your code is given
+Anyway when you run the tests in `GenerativeTests` module we create a bunch of random source code files, then generate a test per file. If one fails we can go back and look at the file that failed and use it to debug manually.
 
-```elixir
-"(first (list 1 (+ 2 3) 9))"
-```
-
-it could return a nested array like
-
-```elixir
-["first", ["list", 1, ["+", 2, 3], 9]].
-```
-
-During your interview, you will pair on writing an interpreter to run the AST. You can start by implementing a single built-in function (for example, `+`) and add more if you have time.
+Again, not fully feature complete but kind of cool!
