@@ -44,7 +44,6 @@ By default we use a stack based handler which builds up a simple AST that looks 
 
 where args can be a string, an integer a float or nested S expression.
 
-
 ### Halting / Resuming
 
 You can also halt / resume the parser by returning a `:halt` tuple that looks like this:
