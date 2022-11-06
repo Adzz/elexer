@@ -1,9 +1,9 @@
 defmodule Elexer.Ignore do
-  def handle_event(event, fn_name, state) do
+  def handle_event(_event, _fn_name, state) do
     {:ok, state}
   end
 
-  def handle_event(event, state) do
+  def handle_event(_event, state) do
     {:ok, state}
   end
 end
