@@ -1,6 +1,5 @@
 defmodule FakeSauce do
   @fn_names ["+", "concat", "-", "/", "*"]
-  # require Logger
   @string_chars 48..122 |> Enum.map(&<<&1>>)
   @number_chars 48..57 |> Enum.map(&<<&1>>)
 
