@@ -14,13 +14,14 @@ defmodule Elexer do
   Executing the stack or executing a recursive function are two ways of doing the same
   thing probably.
   """
-
   def parse(source_code, handler \\ Elexer.StackHandler) do
     source_code
     |> Elexer.Emitter.read_source_code(handler, [])
     |> unwrap()
   end
 
+  # This was pulled out as a public function so that we could call it when we
+  # resume parsing after halting.
   def unwrap(result) do
     case result do
       {:syntax_error, message} -> raise Elexer.SytanxError, message
@@ -33,5 +34,23 @@ defmodule Elexer do
 
   def parse(source_code, handler, state) do
     Elexer.Emitter.read_source_code(source_code, handler, state) |> unwrap()
+  end
+
+  def run({"*", args}) when is_list(args) do
+    Enum.reduce(args, 1, fn
+      {inner_fn, inner_args}, total -> run({inner_fn, inner_args}) * total
+      arg, total -> arg * total
+    end)
+  end
+
+  def run({"+", args}) when is_list(args) do
+    Enum.reduce(args, 0, fn
+      {inner_fn_name, inner_args}, total -> run({inner_fn_name, inner_args}) + total
+      arg, total -> arg + total
+    end)
+  end
+
+  def run(_) do
+    raise "Execution Error!"
   end
 end

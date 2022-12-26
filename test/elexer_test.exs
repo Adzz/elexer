@@ -2,6 +2,43 @@ defmodule ElexerTest do
   use ExUnit.Case
   doctest Elexer
 
+  describe "run/1" do
+    test "we can execute an S expression" do
+      ast = {"+", [1, 2]}
+      assert Elexer.run(ast) == 3
+    end
+
+    test "we can execute an S expression with many args" do
+      ast = {"+", [1, 2, 2, 3, 4, 5, 6]}
+      assert Elexer.run(ast) == 23
+    end
+
+    test "S expressions all the way down" do
+      ast = {"+", [{"+", [3, 4]}, 2]}
+      assert Elexer.run(ast) == 9
+    end
+
+    test "a bit more nesting" do
+      ast = {"+", [{"+", [3, {"+", [100, 10]}]}, 2]}
+      assert Elexer.run(ast) == 115
+    end
+
+    test "we can multiply, we have the power" do
+      ast = {"*", [1, 2]}
+      assert Elexer.run(ast) == 2
+    end
+
+    test "we can multiply bigger number we have the power" do
+      ast = {"*", [5, 2]}
+      assert Elexer.run(ast) == 10
+    end
+
+    test "nested multiplication" do
+      ast = {"*", [{"*", [5, 2]}, 2]}
+      assert Elexer.run(ast) == 20
+    end
+  end
+
   test "emitter" do
     string = "(+ 1 -2)"
     ast = Elexer.parse(string)
